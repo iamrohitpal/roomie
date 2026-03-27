@@ -8,6 +8,7 @@ class SettingController extends Controller
 {
     public function index()
     {
-        return view('settings.index');
+        $groups = auth()->user()->groups;
+        return view('settings.index', compact('groups'));
     }
 }

@@ -5,7 +5,7 @@
         <div class="card"
             style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(14, 165, 233, 0.2)); border: 1px solid var(--primary-light);">
             <p style="color: var(--text-dim); font-size: 0.875rem;">Total Group Spending</p>
-            <h1 style="font-size: 2.5rem; margin: 4px 0;">${{ number_format($totalSpending, 2) }}</h1>
+            <h1 style="font-size: 2.5rem; margin: 4px 0;">₹{{ number_format($totalSpending, 2) }}</h1>
             <p style="color: var(--text-dim); font-size: 0.8125rem;">Split among {{ $roommates->count() }} roommates</p>
         </div>
 
@@ -42,13 +42,9 @@
                 </div>
                 <div style="text-align: right;">
                     <p style="font-weight: 700; color: {{ $roommate->balance >= 0 ? '#4ade80' : '#fb7185' }}">
-                        {{ $roommate->balance >= 0 ? '+' : '' }}${{ number_format(abs($roommate->balance), 2) }}
+                        {{ $roommate->balance >= 0 ? '+' : '' }}₹{{ number_format(abs($roommate->balance), 2) }}
                     </p>
-                    @if ($roommate->balance < 0)
-                        <a href="{{ route('settlements.create', ['sender_id' => $roommate->id]) }}"
-                            style="font-size: 0.625rem; color: var(--primary-light); text-decoration: none; border: 1px solid rgba(99, 102, 241, 0.3); padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block;">Settle
-                            Up</a>
-                    @endif
+                    </p>
                 </div>
             </div>
         @empty
@@ -79,7 +75,7 @@
                                 {{ $expense->date }}</p>
                         </div>
                     </div>
-                    <p style="font-weight: 700;">${{ number_format($expense->amount, 2) }}</p>
+                    <p style="font-weight: 700;">₹{{ number_format($expense->amount, 2) }}</p>
                 </div>
             </div>
         @empty

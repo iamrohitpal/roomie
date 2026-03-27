@@ -9,6 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -179,6 +183,60 @@
             color: #fb7185;
         }
 
+        /* Select & Input Fixes */
+        select option {
+            background-color: #1e293b;
+            color: white;
+        }
+
+        .theme-light select option {
+            background-color: white;
+            color: #0f172a;
+        }
+
+        /* Custom Modal */
+        #custom-confirm-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            padding: 32px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .modal-message {
+            color: var(--text-dim);
+            font-size: 0.875rem;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
         h1,
         h2,
         h3 {
@@ -301,14 +359,43 @@
             if (text) text.innerText = isLight ? 'Light Mode' : 'Dark Mode';
         }
     </script>
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('{{ asset('worker.js') }}')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
 </head>
 
 <body class="{{ isset($_COOKIE['theme']) && $_COOKIE['theme'] === 'light' ? 'theme-light' : '' }}">
     <div class="container">
         <header>
-            <a href="{{ route('dashboard') }}" style="text-decoration: none; color: inherit;">
-                <div class="logo">Roomie</div>
-            </a>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <a href="{{ route('dashboard') }}" style="text-decoration: none; color: inherit;">
+                    <div class="logo" style="margin-bottom: 0;">Roomie</div>
+                </a>
+                @if (session('active_group_id'))
+                    @php $activeGroup = \App\Models\Group::find(session('active_group_id')); @endphp
+                    @if ($activeGroup)
+                        <a href="{{ route('groups.index') }}" style="text-decoration: none;">
+                            <span
+                                style="font-size: 0.625rem; font-weight: 700; color: var(--primary-light); background: rgba(99, 102, 241, 0.1); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(99, 102, 241, 0.2);">
+                                <i class="fa-solid fa-layer-group mr-1" style="font-size: 0.5rem;"></i>
+                                {{ strtoupper($activeGroup->name) }}
+                            </span>
+                        </a>
+                    @endif
+                @endif
+            </div>
+
             @auth
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <div style="text-align: right;">
@@ -324,7 +411,10 @@
                             <img src="{{ Auth::user()->avatar }}"
                                 style="width: 32px; height: 32px; border-radius: 16px; object-fit: cover; border: 1px solid var(--primary-light);">
                         @else
-                            <i class="fa-solid fa-circle-user" style="font-size: 2rem; color: var(--text-dim);"></i>
+                            <div
+                                style="width: 32px; height: 32px; border-radius: 16px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; border: 1px solid var(--glass-border);">
+                                <i class="fa-solid fa-user" style="font-size: 0.875rem; color: var(--text-dim);"></i>
+                            </div>
                         @endif
                     </a>
                 </div>
@@ -370,6 +460,168 @@
         <a href="{{ route('expenses.create') }}" class="fab">
             <i class="fa-solid fa-plus"></i>
         </a>
+    @endauth
+    <div id="custom-confirm-modal">
+        <div class="modal-card">
+            <div id="modal-icon" style="font-size: 3rem; color: var(--accent); margin-bottom: 20px;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="modal-title" id="confirm-title">Are you sure?</h3>
+            <p class="modal-message" id="confirm-message">This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button id="modal-confirm-btn" class="btn btn-primary"
+                    style="background: var(--accent);">Confirm</button>
+                <button onclick="hideConfirm()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let modalAction = null;
+
+        function showConfirm(title, message, onConfirm, isDanger = true) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            confirmBtn.style.background = isDanger ? 'var(--accent)' : 'var(--primary)';
+
+            modalAction = onConfirm;
+            document.getElementById('custom-confirm-modal').style.display = 'flex';
+        }
+
+        function hideConfirm() {
+            document.getElementById('custom-confirm-modal').style.display = 'none';
+            modalAction = null;
+        }
+
+        document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+            if (modalAction) modalAction();
+            hideConfirm();
+        });
+    </script>
+
+    @auth
+        <script>
+            // Global variables for Firebase
+            let messaging = null;
+
+            // Firebase Configuration (Using config() helper for reliability)
+            const firebaseConfig = {
+                apiKey: "{{ config('services.firebase.api_key') }}",
+                authDomain: "{{ config('services.firebase.auth_domain') }}",
+                projectId: "{{ config('services.firebase.project_id') }}",
+                storageBucket: "{{ config('services.firebase.storage_bucket') }}",
+                messagingSenderId: "{{ config('services.firebase.messaging_sender_id') }}",
+                appId: "{{ config('services.firebase.app_id') }}"
+            };
+
+            const vapidKey = "{{ config('services.firebase.vapid_key') }}";
+
+            console.log('Firebase Config:', firebaseConfig);
+
+            if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
+                try {
+                    firebase.initializeApp(firebaseConfig);
+                    messaging = firebase.messaging();
+                    console.log('Firebase initialized successfully.');
+
+                    messaging.onMessage((payload) => {
+                        console.log('Message received. ', payload);
+                        if (payload.notification) {
+                            const notifyTitle = payload.notification.title;
+                            const notifyOptions = {
+                                body: payload.notification.body,
+                                icon: '/logo.png',
+                            };
+                            new Notification(notifyTitle, notifyOptions);
+                        }
+                    });
+                } catch (e) {
+                    console.error('Firebase initialization error:', e);
+                }
+            } else {
+                console.warn('Firebase API Key missing or placeholder. Please check credentials in .env');
+            }
+
+            async function requestPermission() {
+                if (!messaging) {
+                    alert(
+                        'Notification system not ready. Please check Firebase credentials in your .env file or refresh the page.'
+                    );
+                    console.warn('Firebase Messaging not initialized.');
+                    return;
+                }
+
+                console.log('Requesting permission...');
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        console.log('Notification permission granted.');
+
+                        if (!vapidKey) {
+                            alert('VAPID Key missing in .env. Please add FIREBASE_VAPID_KEY.');
+                            return;
+                        }
+
+                        // Register Service Worker and wait until it's ready
+                        const swPath = "{{ asset('firebase-messaging-sw.js') }}";
+                        console.log('Registering SW:', swPath);
+
+                        try {
+                            const registration = await navigator.serviceWorker.register(swPath);
+                            console.log('Service Worker registered successfully:', registration);
+                            await navigator.serviceWorker.ready; // Wait for it to be active
+                            console.log('Service Worker is ready.');
+
+                            const token = await messaging.getToken({
+                                vapidKey: vapidKey,
+                                serviceWorkerRegistration: registration
+                            });
+
+                            if (token) {
+                                sendTokenToServer(token);
+                            } else {
+                                alert('Failed to generate messaging token. Check browser console.');
+                            }
+                        } catch (swError) {
+                            console.error('Service Worker Error or Token Generation Failed:', swError);
+                            alert('Error during Service Worker registration or token generation: ' + swError.message);
+                        }
+                    } else {
+                        alert('Notification permission was ' + permission + '. Please enable it in browser settings.');
+                    }
+                } catch (error) {
+                    console.error('Error getting permission:', error);
+                    alert('Error requesting notification permission: ' + error.message);
+                }
+            }
+
+            function sendTokenToServer(token) {
+                console.log('Sending token to server...', token);
+                fetch("{{ route('fcm.token') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                        },
+                        body: JSON.stringify({
+                            token: token
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Server response: ' + response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Token successfully saved:', data);
+                        alert('Notifications enabled successfully!');
+                    })
+                    .catch(error => {
+                        console.error('Error saving token:', error);
+                        alert('Error saving notification token: ' + error.message);
+                    });
+            }
+        </script>
     @endauth
 </body>
 

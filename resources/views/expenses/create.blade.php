@@ -15,7 +15,7 @@
 
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px;">Amount
-                        ($)</label>
+                        (₹)</label>
                     <input type="number" step="0.01" name="amount" id="main_amount" placeholder="0.00" required
                         style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; color: white; outline: none;">
                 </div>

@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Settlement extends Model
 {
-    protected $fillable = ['sender_id', 'receiver_id', 'amount', 'date'];
+    protected $fillable = ['sender_id', 'receiver_id', 'amount', 'date', 'group_id'];
 
+    public function group()
+    {
+        return $this->belongsTo(Group::class);
+    }
     public function sender()
     {
         return $this->belongsTo(Roommate::class, 'sender_id');

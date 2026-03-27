@@ -26,7 +26,13 @@ class User extends Authenticatable
         'otp',
         'otp_expires_at',
         'avatar',
+        'fcm_token',
     ];
+
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class)->withPivot('role')->withTimestamps();
+    }
 
     /**
      * The attributes that should be hidden for serialization.

@@ -4,19 +4,20 @@
   <img src="public/images/mockup.png" alt="Roomie App Mockup" width="600">
 </p>
 
-**Roomie** is a modern, mobile-first expense tracking and splitting application built with **Laravel** and **NativePHP**. Designed for roommates who want a stress-free way to manage shared costs, Roomie simplifies everything from daily groceries to monthly utility bills.
+**Roomie** is a modern, group-centric expense tracking and splitting application built with **Laravel 12** and **NativePHP**. Designed for roommates who want a stress-free way to manage shared costs, Roomie simplifies everything from daily groceries to monthly utility bills with real-time notifications and offline support.
 
 ---
 
 ## 🌟 Key Features
 
-- **📱 Native Mobile Experience**: Leverages NativePHP for a smooth, app-like feel on your devices.
-- **🔐 Secure Authentication**: Fast login using OTP (One-Time Password) for effortless access.
-- **👥 Roommate Collaboration**: Add and manage roommates to keep everyone in the loop.
-- **📊 Interactive Dashboard**: Get a bird's-eye view of your balances and recent activities.
+- **👥 Group Collaboration**: Scope expenses, roommates, and settlements to specific groups for better organization.
+- **🔔 Real-Time Notifications**: Integrated with **Firebase Cloud Messaging (FCM) V1** for instant alerts on new expenses.
+- **📱 Native Mobile Experience**: Leverages NativePHP for a smooth, app-like feel on Android devices.
+- **📶 PWA & Offline Support**: Service worker integration for reliable performance even without a connection.
 - **💸 Smart Expense Splitting**: Split costs equally or by custom amounts with just a few taps.
 - **⏳ Settlement Tracking**: Keep track of who owes what and mark debts as settled instantly.
-- **👤 Profile Management**: Personalize your profile and preferences.
+- **👤 Profile & Settings**: Personalize your profile and manage notification permissions.
+- **🧹 Group Maintenance**: Securely clear group data or export financial reports to CSV.
 
 ---
 
@@ -24,9 +25,9 @@
 
 - **Framework**: [Laravel 12.x](https://laravel.com)
 - **Runtime**: [NativePHP](https://nativephp.com)
-- **Frontend**: [Vite](https://vitejs.dev), [Tailwind CSS](https://tailwindcss.com), [Blade](https://laravel.com/docs/blade)
+- **Notifications**: [Firebase Cloud Messaging (V1)](https://firebase.google.com/docs/cloud-messaging)
+- **Frontend**: [Vite](https://vitejs.dev), [Vanilla CSS](https://developer.mozilla.org/en-US/docs/Web/CSS), [Blade](https://laravel.com/docs/blade)
 - **Database**: SQLite (default for NativePHP)
-- **Tooling**: Composer, NPM
 
 ---
 
@@ -46,28 +47,47 @@
    cd roomie
    ```
 
-2. **Run the setup script**:
-   This will install dependencies, generate your app key, and run migrations.
+2. **Install dependencies**:
    ```bash
-   composer run setup
+   composer install
+   npm install
    ```
 
-3. **Start the development server**:
+3. **Configure Environment**:
+   Copy `.env.example` to `.env` and configure your Firebase credentials:
+   ```env
+   FIREBASE_API_KEY=your_key
+   FIREBASE_PROJECT_ID=your_id
+   FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   FIREBASE_APP_ID=your_app_id
+   FIREBASE_VAPID_KEY=your_vapid_key
+   ```
+
+4. **Firebase Service Account**:
+   Download your service account JSON from Firebase Console and save it as:
+   `storage/app/firebase-auth.json`
+
+5. **Run the setup**:
+   ```bash
+   php artisan key:generate
+   php artisan migrate
+   npm run build
+   ```
+
+6. **Start the development server**:
    ```bash
    composer run dev
    ```
 
 ---
 
-## 🤝 Contributing
+## 📦 Building for Android
 
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+To generate a release build for Android:
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+```bash
+php artisan native:run android --build=release
+```
 
 ---
 

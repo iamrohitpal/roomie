@@ -2,6 +2,23 @@
 
 @section('content')
     <div class="animate-fade-in">
+        <!-- Group Invitation Card [NEW] -->
+        <div class="card"
+            style="margin-bottom: 32px; border: 1px dashed var(--primary); background: rgba(var(--primary-rgb), 0.05);">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 style="font-size: 0.875rem; color: var(--text-dim); margin-bottom: 4px;">Group Invite Code</h3>
+                    <p style="font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; color: var(--primary);">
+                        {{ \App\Models\Group::find(session('active_group_id'))->invite_code }}</p>
+                </div>
+                <button onclick="copyInviteLink()" class="btn btn-secondary" style="padding: 10px 20px; font-size: 0.875rem;">
+                    <i class="fa-solid fa-share-nodes mr-2"></i> Share Link
+                </button>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-dim); mt-2">Share this code with roommates to have them join
+                this group.</p>
+        </div>
+
         <h2 style="font-size: 1.125rem;">Add Roommate</h2>
         <div class="card">
             <form action="{{ route('roommates.store') }}" method="POST" enctype="multipart/form-data">
@@ -59,16 +76,29 @@
                         <p style="font-size: 0.75rem; color: var(--text-dim);">{{ $roommate->email ?? 'No email' }}</p>
                     </div>
                 </div>
-                <p
-                    style="font-size: 0.75rem; font-weight: 600; color: {{ $roommate->balance >= 0 ? '#4ade80' : '#fb7185' }}">
-                    {{ $roommate->balance >= 0 ? 'Owed' : 'Owes' }} ${{ number_format(abs($roommate->balance), 2) }}
-                </p>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <p
+                        style="font-size: 0.75rem; font-weight: 600; color: {{ $roommate->balance >= 0 ? '#4ade80' : '#fb7185' }}">
+                        {{ $roommate->balance >= 0 ? 'Owed' : 'Owes' }} ₹{{ number_format(abs($roommate->balance), 2) }}
+                    </p>
+                    <button type="button"
+                        onclick="showConfirm('Remove Roommate', 'Are you sure you want to remove {{ $roommate->name }}? Their historical expenses will remain, but they will be removed from future splits.', () => document.getElementById('delete-form-{{ $roommate->id }}').submit())"
+                        style="background: none; border: none; color: #fb7185; cursor: pointer; padding: 4px; font-size: 1rem; opacity: 0.7; transition: opacity 0.2s;"
+                        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                    <form id="delete-form-{{ $roommate->id }}" action="{{ route('roommates.destroy', $roommate->id) }}"
+                        method="POST" style="display: none;">
+                        @csrf
+                        @method('DELETE')
+                    </form>
+                </div>
             </div>
         @endforeach
 
-        @if ($otherUsers->count() > 0)
-            <h2 style="font-size: 1.125rem; margin-top: 32px;">Add from App Users</h2>
-            @foreach ($otherUsers as $user)
+        @if ($otherUsersInGroup->count() > 0)
+            <h2 style="font-size: 1.125rem; margin-top: 32px;">Pending Links (Members in Group)</h2>
+            @foreach ($otherUsersInGroup as $user)
                 <div class="card"
                     style="padding: 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
@@ -88,14 +118,22 @@
                     </div>
                     <form action="{{ route('roommates.add-user', $user->id) }}" method="POST">
                         @csrf
-                        <button type="submit" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.75rem;">Add to
-                            Group</button>
+                        <button type="submit" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.75rem;">Link
+                            Roommate</button>
                     </form>
                 </div>
             @endforeach
         @endif
     </div>
     <script>
+        function copyInviteLink() {
+            const code = "{{ \App\Models\Group::find(session('active_group_id'))->invite_code }}";
+            const text = "Join my Roomie group! Use code: " + code;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Invite info copied to clipboard!');
+            });
+        }
+
         document.getElementById('roommate-avatar-input')?.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {

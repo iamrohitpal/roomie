@@ -1,0 +1,17 @@
+{
+    "name": "Roomie - Expense Splitter",
+    "short_name": "Roomie",
+    "scope": "/native-php/public/",
+    "start_url": "/native-php/public/",
+    "background_color": "#0f172a",
+    "theme_color": "#6366f1",
+    "display": "standalone",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "favicon.ico",
+            "sizes": "64x64",
+            "type": "image/x-icon"
+        }
+    ]
+}

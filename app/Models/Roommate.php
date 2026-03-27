@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Roommate extends Model
 {
-    protected $fillable = ['name', 'email', 'avatar', 'user_id', 'phone'];
+    protected $fillable = ['name', 'email', 'avatar', 'user_id', 'phone', 'group_id'];
 
+    public function group()
+    {
+        return $this->belongsTo(Group::class);
+    }
     public function user()
     {
         return $this->belongsTo(User::class);

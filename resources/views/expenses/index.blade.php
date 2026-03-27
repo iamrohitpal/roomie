@@ -32,7 +32,7 @@
                         </div>
                         <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 8px;">
                             <span
-                                style="color: var(--text); font-weight: 500;">${{ number_format($expense->amount, 2) }}</span>
+                                style="color: var(--text); font-weight: 500;">₹{{ number_format($expense->amount, 2) }}</span>
                         </p>
                     </div>
                     <div style="text-align: right;">
@@ -47,7 +47,7 @@
                         Split with:</p>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         @foreach ($expense->splits as $split)
-                            <div title="{{ $split->roommate->name }}: ${{ number_format($split->amount, 2) }}"
+                            <div title="{{ $split->roommate->name }}: ₹{{ number_format($split->amount, 2) }}"
                                 style="width: 24px; height: 24px; border-radius: 12px; background: var(--glass-border); border: 1px solid var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700;">
                                 {{ substr($split->roommate->name, 0, 1) }}
                             </div>

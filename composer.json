@@ -1,12 +1,17 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "iamrohitpal/roomie",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "version": "1.0.0",
+    "description": "Group-based expense splitter with NativePHP and FCM V1 notifications.",
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "google/auth": "^1.50",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "nativephp/mobile": "^3.1"
