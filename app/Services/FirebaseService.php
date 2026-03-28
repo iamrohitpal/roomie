@@ -56,30 +56,33 @@ class FirebaseService
 
         $endpoint = "https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send";
 
-        $payload = [
-            'message' => [
-                'token' => $token,
+        $message = [
+            'token' => $token,
+            'notification' => [
+                'title' => $title,
+                'body' => $body,
+            ],
+            'android' => [
+                'priority' => 'high',
                 'notification' => [
-                    'title' => $title,
-                    'body' => $body,
+                    'sound' => 'default',
                 ],
-                'data' => array_map('strval', $data), // V1 data values must be strings
-                'android' => [
-                    'priority' => 'high',
-                    'notification' => [
-                        'sound' => 'default',
-                    ],
+            ],
+            'webpush' => [
+                'headers' => [
+                    'Urgency' => 'high',
                 ],
-                'webpush' => [
-                    'headers' => [
-                        'Urgency' => 'high',
-                    ],
-                    'notification' => [
-                        'icon' => '/logo.png',
-                    ],
+                'notification' => [
+                    'icon' => '/logo.png',
                 ],
             ],
         ];
+
+        if (! empty($data)) {
+            $message['data'] = array_map('strval', $data);
+        }
+
+        $payload = ['message' => $message];
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer '.$accessToken,
@@ -111,8 +114,6 @@ class FirebaseService
             ->pluck('fcm_token')
             ->toArray();
 
-        // Note: v1 API doesn't support multicast with a single request.
-        // We must loop through each token.
         foreach ($tokens as $token) {
             $this->send($token, $title, $body, $data);
         }

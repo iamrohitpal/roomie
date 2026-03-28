@@ -2,15 +2,22 @@
 
 @section('content')
     <div class="animate-fade-in">
-        <a href="{{ route('groups.index') }}"
-            style="display: inline-flex; align-items: center; color: var(--text-dim); text-decoration: none; margin-bottom: 24px; font-size: 0.875rem;">
-            <i class="fa-solid fa-arrow-left" style="margin-right: 8px;"></i>
-            Back to Groups
-        </a>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <a href="{{ route('groups.index') }}"
+                style="display: inline-flex; align-items: center; color: var(--primary-light); text-decoration: none; font-size: 0.875rem; font-weight: 600;">
+                <i class="fa-solid fa-arrow-left" style="margin-right: 8px;"></i>
+                Back to Groups
+            </a>
+            <a href="{{ route('groups.join') }}"
+                style="display: inline-flex; align-items: center; color: var(--primary-light); text-decoration: none; font-size: 0.875rem; font-weight: 600;">
+                Join Group <i class="fa-solid fa-right-to-bracket" style="margin-left: 8px;"></i>
+            </a>
+        </div>
 
         <div class="card">
             <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 8px;">Create Group</h1>
-            <p style="color: var(--text-dim); margin-bottom: 32px; font-size: 0.875rem;">Set up a new space to split expenses
+            <p style="color: var(--text-dim); margin-bottom: 32px; font-size: 0.875rem;">Set up a new space to split
+                expenses
                 with your roommates.</p>
 
             <form action="{{ route('groups.store') }}" method="POST">

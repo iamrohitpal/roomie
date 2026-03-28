@@ -9,6 +9,21 @@
             </a>
         </div>
 
+        <form action="{{ route('groups.index') }}" method="GET" style="margin-bottom: 24px;">
+            <div style="position: relative;">
+                <i class="fa-solid fa-magnifying-glass"
+                    style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.875rem;"></i>
+                <input type="text" name="search" placeholder="Search groups..." value="{{ request('search') }}"
+                    style="width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 12px 12px 40px; color: white; outline: none; font-size: 0.875rem;">
+                @if (request('search'))
+                    <a href="{{ route('groups.index') }}"
+                        style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); text-decoration: none;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                @endif
+            </div>
+        </form>
+
         @if ($groups->isEmpty())
             <div class="card" style="text-align: center; padding: 48px 24px;">
                 <div
@@ -25,44 +40,72 @@
                 </div>
             </div>
         @else
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                @foreach ($groups as $group)
-                    <form action="{{ route('groups.switch', $group->id) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="card"
-                            style="width: 100%; text-align: left; padding: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; border: 1px solid {{ session('active_group_id') == $group->id ? 'var(--primary)' : 'var(--glass-border)' }}; background: {{ session('active_group_id') == $group->id ? 'rgba(99, 102, 241, 0.05)' : 'var(--card-bg)' }};">
-                            <div>
-                                <h3
-                                    style="font-size: 1.125rem; font-weight: 700; color: {{ session('active_group_id') == $group->id ? 'var(--primary-light)' : 'var(--text)' }};">
-                                    {{ $group->name }}
-                                </h3>
-                                <div
-                                    style="display: flex; align-items: center; gap: 12px; margin-top: 8px; font-size: 0.75rem; color: var(--text-dim);">
-                                    <span><i class="fa-solid fa-user-group" style="margin-right: 4px;"></i>
-                                        {{ $group->users->count() }} members</span>
-                                    <span><i class="fa-solid fa-key" style="margin-right: 4px;"></i>
-                                        {{ $group->invite_code }}</span>
-                                </div>
-                            </div>
-                            @if (session('active_group_id') == $group->id)
-                                <div
-                                    style="width: 10px; height: 10px; background: var(--primary); border-radius: 5px; box-shadow: 0 0 10px var(--primary);">
-                                </div>
-                            @else
-                                <i class="fa-solid fa-chevron-right"
-                                    style="color: var(--text-dim); font-size: 0.875rem;"></i>
-                            @endif
-                        </button>
-                    </form>
-                @endforeach
+            <div id="groups-list">
+                @include('groups._list')
+            </div>
 
-                <div style="display: flex; gap: 12px; margin-top: 16px;">
-                    <a href="{{ route('groups.create') }}" class="btn btn-secondary"
-                        style="flex: 1; font-size: 0.875rem;">Create Group</a>
-                    <a href="{{ route('groups.join') }}" class="btn btn-secondary"
-                        style="flex: 1; font-size: 0.875rem;">Join Group</a>
+            @if ($groups->hasMorePages())
+                <div id="load-more-groups-container" style="text-align: center; margin-top: 20px; margin-bottom: 40px;">
+                    <button id="load-more-groups-btn" data-url="{{ $groups->nextPageUrl() }}" class="btn"
+                        style="background: var(--glass-border); color: var(--text); border: 1px solid var(--glass-border); width: 100%;">
+                        <i class="fa-solid fa-chevron-down" style="margin-right: 8px;"></i> Load More
+                    </button>
                 </div>
+            @endif
+
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+                <a href="{{ route('groups.create') }}" class="btn btn-secondary"
+                    style="flex: 1; font-size: 0.875rem;">Create
+                    Group</a>
+                <a href="{{ route('groups.join') }}" class="btn btn-secondary" style="flex: 1; font-size: 0.875rem;">Join
+                    Group</a>
             </div>
         @endif
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadMoreBtn = document.getElementById('load-more-groups-btn');
+            const listContainer = document.getElementById('groups-list');
+            const loadMoreContainer = document.getElementById('load-more-groups-container');
+
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', function() {
+                    const url = loadMoreBtn.getAttribute('data-url');
+                    loadMoreBtn.disabled = true;
+                    loadMoreBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
+
+                    fetch(url, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            const temp = document.createElement('div');
+                            temp.innerHTML = data.html;
+
+                            while (temp.firstChild) {
+                                listContainer.appendChild(temp.firstChild);
+                            }
+
+                            if (data.next_page) {
+                                loadMoreBtn.setAttribute('data-url', data.next_page);
+                                loadMoreBtn.disabled = false;
+                                loadMoreBtn.innerHTML =
+                                    '<i class="fa-solid fa-chevron-down"></i> Load More';
+                            } else {
+                                loadMoreContainer.remove();
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error loading more:', err);
+                            loadMoreBtn.innerHTML = 'Error. Try again.';
+                            loadMoreBtn.disabled = false;
+                        });
+                });
+            }
+        });
+    </script>
     </div>
 @endsection

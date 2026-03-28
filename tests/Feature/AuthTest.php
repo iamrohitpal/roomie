@@ -20,14 +20,14 @@ class AuthTest extends TestCase
     public function test_user_can_request_otp()
     {
         $response = $this->post('/login', [
-            'phone' => '1234567890'
+            'phone' => '1234567890',
         ]);
 
         $response->assertRedirect(route('auth.verify-otp'));
         $this->assertDatabaseHas('users', [
-            'phone' => '1234567890'
+            'phone' => '1234567890',
         ]);
-        
+
         $user = User::where('phone', '1234567890')->first();
         $this->assertNotNull($user->otp);
     }
@@ -35,7 +35,7 @@ class AuthTest extends TestCase
     public function test_invalid_phone_number_fails_validation()
     {
         $response = $this->post('/login', [
-            'phone' => '123'
+            'phone' => '123',
         ]);
 
         $response->assertSessionHasErrors('phone');
@@ -52,7 +52,7 @@ class AuthTest extends TestCase
         session(['auth_phone' => '9876543210']);
 
         $response = $this->post('/verify-otp', [
-            'otp' => '123456'
+            'otp' => '123456',
         ]);
 
         $response->assertRedirect(route('auth.profile-setup'));

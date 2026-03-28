@@ -32,6 +32,13 @@
                 </div>
 
                 <div style="margin-bottom: 24px;">
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Phone
+                        Number (Read-only)</label>
+                    <input type="text" value="{{ Auth::check() ? Auth::user()->phone : session('auth_phone') }}" readonly
+                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; color: var(--text-dim); outline: none; font-size: 1rem; cursor: not-allowed;">
+                </div>
+
+                <div style="margin-bottom: 24px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Your
                         Name</label>
                     <input type="text" name="name" placeholder="Enter your name"

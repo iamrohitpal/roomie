@@ -5,14 +5,35 @@ namespace App\Http\Controllers;
 use App\Models\Expense;
 use App\Models\ExpenseSplit;
 use App\Models\Roommate;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $groupId = session('active_group_id');
         $roommates = Roommate::where('group_id', $groupId)->get();
-        $recentExpenses = Expense::where('group_id', $groupId)->with('payer')->latest()->take(5)->get();
+        $query = Expense::where('group_id', $groupId)->with('payer');
+
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%")
+                    ->orWhereHas('payer', function ($pq) use ($search) {
+                        $pq->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $recentExpenses = $query->latest()->simplePaginate(20);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('expenses._recent', compact('recentExpenses'))->render(),
+                'next_page' => $recentExpenses->nextPageUrl(),
+            ]);
+        }
 
         $totalSpending = Expense::where('group_id', $groupId)->sum('amount');
 

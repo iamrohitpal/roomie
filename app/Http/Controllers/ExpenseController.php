@@ -19,10 +19,30 @@ class ExpenseController extends Controller
         $this->firebase = $firebase;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $groupId = session('active_group_id');
-        $expenses = Expense::where('group_id', $groupId)->with('payer')->latest()->get();
+        $query = Expense::where('group_id', $groupId)->with('payer');
+
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%")
+                    ->orWhereHas('payer', function ($pq) use ($search) {
+                        $pq->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $expenses = $query->latest()->simplePaginate(20);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('expenses._list', compact('expenses'))->render(),
+                'next_page' => $expenses->nextPageUrl(),
+            ]);
+        }
 
         return view('expenses.index', compact('expenses'));
     }

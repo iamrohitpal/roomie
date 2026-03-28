@@ -62,18 +62,30 @@
         .container {
             max-width: 500px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0 20px 20px 20px;
         }
 
         header {
-            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            padding: 16px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 1000;
+            margin: 0 -20px 20px -20px;
+            padding: 16px 20px;
+        }
+
+        .theme-light header {
+            background: rgba(241, 245, 249, 0.8);
         }
 
         .logo {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 700;
             background: linear-gradient(to right, var(--primary-light), var(--secondary));
             -webkit-background-clip: text;
@@ -382,7 +394,7 @@
 <body class="{{ isset($_COOKIE['theme']) && $_COOKIE['theme'] === 'light' ? 'theme-light' : '' }}">
     <div class="container">
         <header>
-            <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; flex-direction: column;">
                 <a href="{{ route('dashboard') }}" style="text-decoration: none; color: inherit;">
                     <div class="logo" style="margin-bottom: 0;">Roomie</div>
                 </a>
@@ -531,87 +543,49 @@
 
             const vapidKey = "{{ config('services.firebase.vapid_key') }}";
 
-            console.log('Firebase Config:', firebaseConfig);
-
             if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
                 try {
                     firebase.initializeApp(firebaseConfig);
                     messaging = firebase.messaging();
-                    console.log('Firebase initialized successfully.');
 
                     messaging.onMessage((payload) => {
-                        console.log('Message received. ', payload);
                         if (payload.notification) {
-                            const notifyTitle = payload.notification.title;
-                            const notifyOptions = {
+                            new Notification(payload.notification.title, {
                                 body: payload.notification.body,
                                 icon: '/logo.png',
-                            };
-                            new Notification(notifyTitle, notifyOptions);
+                            });
                         }
                     });
                 } catch (e) {
                     console.error('Firebase initialization error:', e);
                 }
-            } else {
-                console.warn('Firebase API Key missing or placeholder. Please check credentials in .env');
             }
 
             async function requestPermission() {
-                if (!messaging) {
-                    alert(
-                        'Notification system not ready. Please check Firebase credentials in your .env file or refresh the page.'
-                    );
-                    console.warn('Firebase Messaging not initialized.');
-                    return;
-                }
+                if (!messaging) return;
 
-                console.log('Requesting permission...');
                 try {
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
-                        console.log('Notification permission granted.');
-
-                        if (!vapidKey) {
-                            alert('VAPID Key missing in .env. Please add FIREBASE_VAPID_KEY.');
-                            return;
-                        }
-
-                        // Register Service Worker and wait until it's ready
                         const swPath = "{{ asset('firebase-messaging-sw.js') }}";
-                        console.log('Registering SW:', swPath);
+                        const registration = await navigator.serviceWorker.register(swPath);
+                        await navigator.serviceWorker.ready;
 
-                        try {
-                            const registration = await navigator.serviceWorker.register(swPath);
-                            console.log('Service Worker registered successfully:', registration);
-                            await navigator.serviceWorker.ready; // Wait for it to be active
-                            console.log('Service Worker is ready.');
+                        const token = await messaging.getToken({
+                            vapidKey: vapidKey,
+                            serviceWorkerRegistration: registration
+                        });
 
-                            const token = await messaging.getToken({
-                                vapidKey: vapidKey,
-                                serviceWorkerRegistration: registration
-                            });
-
-                            if (token) {
-                                sendTokenToServer(token);
-                            } else {
-                                alert('Failed to generate messaging token. Check browser console.');
-                            }
-                        } catch (swError) {
-                            console.error('Service Worker Error or Token Generation Failed:', swError);
-                            alert('Error during Service Worker registration or token generation: ' + swError.message);
+                        if (token) {
+                            sendTokenToServer(token);
                         }
-                    } else {
-                        alert('Notification permission was ' + permission + '. Please enable it in browser settings.');
                     }
                 } catch (error) {
-                    console.error('Error getting permission:', error);
-                    alert('Error requesting notification permission: ' + error.message);
+                    console.error('Notification error:', error);
                 }
             }
 
             function sendTokenToServer(token) {
-                console.log('Sending token to server...', token);
                 fetch("{{ route('fcm.token') }}", {
                         method: 'POST',
                         headers: {
@@ -625,10 +599,6 @@
                     .then(response => {
                         if (!response.ok) throw new Error('Server response: ' + response.status);
                         return response.json();
-                    })
-                    .then(data => {
-                        console.log('Token successfully saved:', data);
-                        alert('Notifications enabled successfully!');
                     })
                     .catch(error => {
                         console.error('Error saving token:', error);

@@ -8,60 +8,80 @@
                 New</a>
         </div>
 
-        @forelse($expenses as $expense)
-            <div class="card" style="padding: 16px; margin-bottom: 12px; position: relative; overflow: hidden;">
-                <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--primary);"></div>
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div
-                                style="width: 36px; height: 36px; border-radius: 18px; background: var(--glass-border); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 0.8125rem;">
-                                @if ($expense->payer->avatar)
-                                    <img src="{{ $expense->payer->avatar }}"
-                                        style="width: 100%; height: 100%; object-fit: cover;">
-                                @else
-                                    {{ substr($expense->payer->name, 0, 1) }}
-                                @endif
-                            </div>
-                            <div>
-                                <p style="font-weight: 600;">{{ $expense->description }}</p>
-                                <p style="font-size: 0.75rem; color: var(--text-dim);">Paid by
-                                    {{ $expense->payer->user_id === Auth::id() ? 'You' : $expense->payer->name }} •
-                                    {{ date('D, M j, Y', strtotime($expense->date)) }}</p>
-                            </div>
-                        </div>
-                        <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 8px;">
-                            <span
-                                style="color: var(--text); font-weight: 500;">₹{{ number_format($expense->amount, 2) }}</span>
-                        </p>
-                    </div>
-                    <div style="text-align: right;">
-                        <span class="badge"
-                            style="background: rgba(99, 102, 241, 0.1); color: var(--primary-light);">{{ $expense->category }}</span>
-                    </div>
-                </div>
+        <form action="{{ route('expenses.index') }}" method="GET" style="margin-bottom: 24px;">
+            <div style="position: relative;">
+                <i class="fa-solid fa-magnifying-glass"
+                    style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.875rem;"></i>
+                <input type="text" name="search" placeholder="Search expenses..." value="{{ request('search') }}"
+                    style="width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 12px 12px 40px; color: white; outline: none; font-size: 0.875rem;">
+                @if (request('search'))
+                    <a href="{{ route('expenses.index') }}"
+                        style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); text-decoration: none;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                @endif
+            </div>
+        </form>
 
-                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--glass-border);">
-                    <p
-                        style="font-size: 0.625rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
-                        Split with:</p>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        @foreach ($expense->splits as $split)
-                            <div title="{{ $split->roommate->name }}: ₹{{ number_format($split->amount, 2) }}"
-                                style="width: 24px; height: 24px; border-radius: 12px; background: var(--glass-border); border: 1px solid var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 0.625rem; font-weight: 700;">
-                                {{ substr($split->roommate->name, 0, 1) }}
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
+        <div id="expense-list">
+            @include('expenses._list')
+        </div>
+
+        @if ($expenses->hasMorePages())
+            <div id="load-more-container" style="text-align: center; margin-top: 20px; margin-bottom: 40px;">
+                <button id="load-more-btn" data-url="{{ $expenses->nextPageUrl() }}" class="btn"
+                    style="background: var(--glass-border); color: var(--text); border: 1px solid var(--glass-border); width: 100%;">
+                    <i class="fa-solid fa-chevron-down" style="margin-right: 8px;"></i> Load More
+                </button>
             </div>
-        @empty
-            <div class="card" style="text-align: center; color: var(--text-dim); padding: 60px 20px;">
-                <i class="fa-solid fa-receipt" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.2;"></i>
-                <p>No expenses recorded yet.</p>
-                <a href="{{ route('expenses.create') }}" class="btn btn-primary" style="margin-top: 16px;">Record First
-                    Expense</a>
-            </div>
-        @endforelse
+        @endif
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const listContainer = document.getElementById('expense-list');
+            const loadMoreContainer = document.getElementById('load-more-container');
+
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', function() {
+                    const url = loadMoreBtn.getAttribute('data-url');
+                    loadMoreBtn.disabled = true;
+                    loadMoreBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
+
+                    fetch(url, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            // Create a temporary container to parse the HTML
+                            const temp = document.createElement('div');
+                            temp.innerHTML = data.html;
+
+                            // Append only the items
+                            while (temp.firstChild) {
+                                listContainer.appendChild(temp.firstChild);
+                            }
+
+                            if (data.next_page) {
+                                loadMoreBtn.setAttribute('data-url', data.next_page);
+                                loadMoreBtn.disabled = false;
+                                loadMoreBtn.innerHTML =
+                                    '<i class="fa-solid fa-chevron-down"></i> Load More';
+                            } else {
+                                loadMoreContainer.remove();
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error loading more:', err);
+                            loadMoreBtn.innerHTML = 'Error. Try again.';
+                            loadMoreBtn.disabled = false;
+                        });
+                });
+            }
+        });
+    </script>
     </div>
 @endsection

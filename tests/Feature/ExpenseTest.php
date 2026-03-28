@@ -14,7 +14,9 @@ class ExpenseTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $group;
+
     protected $roommate;
 
     protected function setUp(): void
@@ -25,15 +27,15 @@ class ExpenseTest extends TestCase
         $this->group = Group::create([
             'name' => 'House',
             'invite_code' => 'TEST12',
-            'created_by' => $this->user->id
+            'created_by' => $this->user->id,
         ]);
         $this->group->users()->attach($this->user->id, ['role' => 'admin']);
-        
+
         $this->roommate = Roommate::create([
             'group_id' => $this->group->id,
             'user_id' => $this->user->id,
             'name' => $this->user->name,
-            'phone' => $this->user->phone
+            'phone' => $this->user->phone,
         ]);
 
         $this->actingAs($this->user);
@@ -47,8 +49,8 @@ class ExpenseTest extends TestCase
             'amount' => 500,
             'date' => now()->format('Y-m-d'),
             'splits' => [
-                $this->roommate->id => 500
-            ]
+                $this->roommate->id => 500,
+            ],
         ]);
 
         $response->assertRedirect(route('dashboard'));
@@ -62,8 +64,8 @@ class ExpenseTest extends TestCase
             'amount' => 500,
             'date' => now()->format('Y-m-d'),
             'splits' => [
-                $this->roommate->id => 400 // Sum is 400, but amount is 500
-            ]
+                $this->roommate->id => 400, // Sum is 400, but amount is 500
+            ],
         ]);
 
         $response->assertSessionHasErrors('amount');
@@ -76,9 +78,44 @@ class ExpenseTest extends TestCase
             'description' => '',
             'amount' => -10,
             'date' => 'not-a-date',
-            'splits' => []
+            'splits' => [],
         ]);
 
         $response->assertSessionHasErrors(['description', 'amount', 'date', 'splits']);
+    }
+
+    public function test_user_can_search_expenses()
+    {
+        Expense::create(['group_id' => $this->group->id, 'description' => 'Grocery Shop', 'payer_id' => $this->roommate->id, 'amount' => 100, 'date' => now(), 'category' => 'Food']);
+        Expense::create(['group_id' => $this->group->id, 'description' => 'Rent Payment', 'payer_id' => $this->roommate->id, 'amount' => 500, 'date' => now(), 'category' => 'Rent']);
+
+        $response = $this->get(route('expenses.index', ['search' => 'Grocery']));
+
+        $response->assertStatus(200);
+        $response->assertSee('Grocery Shop');
+        $response->assertDontSee('Rent Payment');
+    }
+
+    public function test_expense_list_returns_paginated_json_via_ajax()
+    {
+        // Create 25 expenses to trigger pagination (page size is 20)
+        for ($i = 0; $i < 25; $i++) {
+            Expense::create([
+                'group_id' => $this->group->id,
+                'payer_id' => $this->roommate->id,
+                'description' => 'Expense '.$i,
+                'amount' => 100,
+                'date' => now(),
+                'category' => 'Other',
+            ]);
+        }
+
+        $response = $this->get(route('expenses.index'), [
+            'HTTP_X-Requested-With' => 'XMLHttpRequest',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure(['html', 'next_page']);
+        $this->assertNotNull($response->json('next_page'));
     }
 }

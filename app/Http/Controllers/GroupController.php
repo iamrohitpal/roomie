@@ -21,9 +21,26 @@ class GroupController extends Controller
         $this->firebase = $firebase;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $groups = Auth::user()->groups;
+        $query = Auth::user()->groups();
+
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('invite_code', 'like', "%{$search}%");
+            });
+        }
+
+        $groups = $query->latest()->simplePaginate(20);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('groups._list', compact('groups'))->render(),
+                'next_page' => $groups->nextPageUrl(),
+            ]);
+        }
 
         return view('groups.index', compact('groups'));
     }

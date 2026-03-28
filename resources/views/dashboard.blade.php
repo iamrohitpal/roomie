@@ -9,6 +9,22 @@
             <p style="color: var(--text-dim); font-size: 0.8125rem;">Split among {{ $roommates->count() }} roommates</p>
         </div>
 
+        <form action="{{ route('dashboard') }}" method="GET" style="margin-top: 24px;">
+            <div style="position: relative;">
+                <i class="fa-solid fa-magnifying-glass"
+                    style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.875rem;"></i>
+                <input type="text" name="search" placeholder="Search expenses or roommates..."
+                    value="{{ request('search') }}"
+                    style="width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 12px 12px 40px; color: white; outline: none; font-size: 0.875rem;">
+                @if (request('search'))
+                    <a href="{{ route('dashboard') }}"
+                        style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); text-decoration: none;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                @endif
+            </div>
+        </form>
+
         <h2
             style="font-size: 1.125rem; margin-top: 32px; display: flex; justify-content: space-between; align-items: center;">
             Roommates Balances
@@ -56,30 +72,62 @@
         @endforelse
 
         <h2 style="font-size: 1.125rem; margin-top: 32px;">Recent Expenses</h2>
-        @forelse($recentExpenses as $expense)
-            <div class="card" style="padding: 16px; margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="display: flex; gap: 12px; align-items: center;">
-                        <div
-                            style="width: 32px; height: 32px; border-radius: 16px; background: var(--glass-border); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 0.75rem;">
-                            @if ($expense->payer->avatar)
-                                <img src="{{ $expense->payer->avatar }}"
-                                    style="width: 100%; height: 100%; object-fit: cover;">
-                            @else
-                                {{ substr($expense->payer->name, 0, 1) }}
-                            @endif
-                        </div>
-                        <div>
-                            <p style="font-weight: 600;">{{ $expense->description }}</p>
-                            <p style="font-size: 0.75rem; color: var(--text-dim);">Paid by {{ $expense->payer->name }} •
-                                {{ $expense->date }}</p>
-                        </div>
-                    </div>
-                    <p style="font-weight: 700;">₹{{ number_format($expense->amount, 2) }}</p>
-                </div>
+        <div id="recent-expenses-list">
+            @include('expenses._recent')
+        </div>
+
+        @if ($recentExpenses->hasMorePages())
+            <div id="load-more-dashboard-container" style="text-align: center; margin-top: 20px; margin-bottom: 40px;">
+                <button id="load-more-dashboard-btn" data-url="{{ $recentExpenses->nextPageUrl() }}" class="btn"
+                    style="background: var(--glass-border); color: var(--text); border: 1px solid var(--glass-border); width: 100%;">
+                    <i class="fa-solid fa-chevron-down" style="margin-right: 8px;"></i> Load More
+                </button>
             </div>
-        @empty
-            <p style="text-align: center; color: var(--text-dim); margin-top: 12px;">No expenses yet.</p>
-        @endforelse
+        @endif
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadMoreBtn = document.getElementById('load-more-dashboard-btn');
+            const listContainer = document.getElementById('recent-expenses-list');
+            const loadMoreContainer = document.getElementById('load-more-dashboard-container');
+
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', function() {
+                    const url = loadMoreBtn.getAttribute('data-url');
+                    loadMoreBtn.disabled = true;
+                    loadMoreBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
+
+                    fetch(url, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            const temp = document.createElement('div');
+                            temp.innerHTML = data.html;
+
+                            while (temp.firstChild) {
+                                listContainer.appendChild(temp.firstChild);
+                            }
+
+                            if (data.next_page) {
+                                loadMoreBtn.setAttribute('data-url', data.next_page);
+                                loadMoreBtn.disabled = false;
+                                loadMoreBtn.innerHTML =
+                                    '<i class="fa-solid fa-chevron-down"></i> Load More';
+                            } else {
+                                loadMoreContainer.remove();
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error loading more:', err);
+                            loadMoreBtn.innerHTML = 'Error. Try again.';
+                            loadMoreBtn.disabled = false;
+                        });
+                });
+            }
+        });
+    </script>
 @endsection
