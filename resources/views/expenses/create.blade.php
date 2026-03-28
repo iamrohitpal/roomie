@@ -9,15 +9,23 @@
                 <div style="margin-bottom: 16px;">
                     <label
                         style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px;">Description</label>
-                    <input type="text" name="description" placeholder="e.g. Groceries, Rent, Electricity" required
-                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; color: white; outline: none;">
+                    <input type="text" name="description" value="{{ old('description') }}"
+                        placeholder="e.g. Groceries, Rent, Electricity" required
+                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid {{ $errors->has('description') ? 'var(--accent)' : 'var(--glass-border)' }}; border-radius: 10px; padding: 12px; color: white; outline: none;">
+                    @error('description')
+                        <p style="color: var(--accent); font-size: 0.75rem; margin-top: 4px;">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px;">Amount
                         (₹)</label>
-                    <input type="number" step="0.01" name="amount" id="main_amount" placeholder="0.00" required
-                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; color: white; outline: none;">
+                    <input type="number" step="0.01" name="amount" id="main_amount" value="{{ old('amount') }}"
+                        placeholder="0.00" required
+                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid {{ $errors->has('amount') ? 'var(--accent)' : 'var(--glass-border)' }}; border-radius: 10px; padding: 12px; color: white; outline: none;">
+                    @error('amount')
+                        <p style="color: var(--accent); font-size: 0.75rem; margin-top: 4px;">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div style="margin-bottom: 16px;">

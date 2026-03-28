@@ -18,11 +18,15 @@
                     <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Phone
                         Number</label>
                     <div
-                        style="display: flex; gap: 12px; align-items: center; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 4px 16px;">
+                        style="display: flex; gap: 12px; align-items: center; background: rgba(255, 255, 255, 0.05); border: 1px solid {{ $errors->has('phone') ? 'var(--accent)' : 'var(--glass-border)' }}; border-radius: 12px; padding: 4px 16px;">
                         <span style="color: var(--text-dim); font-weight: 600;">+91</span>
-                        <input type="tel" name="phone" placeholder="9876543210" required
+                        <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="9876543210" required
                             style="flex: 1; background: transparent; border: none; padding: 12px 0; color: white; outline: none; font-size: 1rem; font-weight: 500; letter-spacing: 0.1em;">
                     </div>
+                    @error('phone')
+                        <p style="color: var(--accent); font-size: 0.75rem; margin-top: 8px;"><i
+                                class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                    @enderror
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px;">Send OTP</button>

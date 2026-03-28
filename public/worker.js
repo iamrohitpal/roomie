@@ -34,20 +34,34 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+    // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
-    event.respondWith(
-        caches.match(event.request).then(response => {
-            return response || fetch(event.request).then(fetchResponse => {
-                // Determine if we should cache this new request
-                // In this case, we'll just return it
-                return fetchResponse;
-            }).catch(() => {
-                // If both fail (offline), you can return a fallback page here
-                if (event.request.mode === 'navigate') {
-                    return caches.match('/');
-                }
-            });
-        })
-    );
+    const url = new URL(event.request.url);
+
+    // Network-First strategy for the app shell and dynamic pages
+    // This ensure CSRF tokens and session data stay fresh
+    if (event.request.mode === 'navigate' || assetsToCache.includes(url.pathname)) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    // Update cache for these assets if successful
+                    if (response.ok) {
+                        const copy = response.clone();
+                        caches.open(cacheName).then(cache => cache.put(event.request, copy));
+                    }
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+    } else {
+        // Cache-First for other assets (images, fonts, etc.)
+        event.respondWith(
+            caches.match(event.request).then(response => {
+                return response || fetch(event.request).then(fetchResponse => {
+                    return fetchResponse;
+                });
+            })
+        );
+    }
 });

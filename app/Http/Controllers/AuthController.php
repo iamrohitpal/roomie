@@ -2,24 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
+use App\Models\Roommate;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
 
 class AuthController extends Controller
 {
     public function showLogin()
     {
+        if (Auth::check()) {
+            return redirect()->route('dashboard');
+        }
+
         return view('auth.login');
     }
 
     public function sendOtp(Request $request)
     {
         $request->validate([
-            'phone' => 'required|string|min:10|max:15',
+            'phone' => 'required|numeric|digits:10',
         ]);
 
         $otp = rand(100000, 999999);
@@ -39,7 +43,10 @@ class AuthController extends Controller
 
     public function showVerifyOtp()
     {
-        if (!session('auth_phone')) return redirect()->route('login');
+        if (! session('auth_phone')) {
+            return redirect()->route('login');
+        }
+
         return view('auth.verify-otp');
     }
 
@@ -52,7 +59,7 @@ class AuthController extends Controller
         $phone = session('auth_phone');
         $user = User::where('phone', $phone)->first();
 
-        if (!$user || $user->otp !== $request->otp || Carbon::now()->gt($user->otp_expires_at)) {
+        if (! $user || $user->otp !== $request->otp || Carbon::now()->gt($user->otp_expires_at)) {
             return redirect()->back()->withErrors(['otp' => 'Invalid or expired OTP.']);
         }
 
@@ -70,34 +77,39 @@ class AuthController extends Controller
 
     public function showProfileSetup()
     {
-        if (!session('auth_phone') && !Auth::check()) return redirect()->route('login');
+        if (! session('auth_phone') && ! Auth::check()) {
+            return redirect()->route('login');
+        }
+
         return view('auth.profile-setup');
     }
 
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'avatar' => 'nullable|image|max:2048',
+            'name' => 'required|string|max:50|min:2',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $phone = session('auth_phone');
         $user = $phone ? User::where('phone', $phone)->first() : Auth::user();
 
-        if (!$user) return redirect()->route('login');
+        if (! $user) {
+            return redirect()->route('login');
+        }
 
         $data = ['name' => $request->name];
 
         if ($request->hasFile('avatar')) {
             $path = $request->file('avatar')->store('avatars', 'public');
-            $data['avatar'] = asset('storage/' . $path);
+            $data['avatar'] = asset('storage/'.$path);
         }
 
         $user->update($data);
 
         // Sync with Roommate record
         // First check if a roommate exists with this phone but no user_id
-        $existingRoommate = \App\Models\Roommate::where('phone', $user->phone)
+        $existingRoommate = Roommate::where('phone', $user->phone)
             ->whereNull('user_id')
             ->first();
 
@@ -109,7 +121,7 @@ class AuthController extends Controller
                 'email' => $user->email ?? $existingRoommate->email,
             ]);
         } else {
-            \App\Models\Roommate::updateOrCreate(
+            Roommate::updateOrCreate(
                 ['user_id' => $user->id],
                 [
                     'phone' => $user->phone,
@@ -129,6 +141,7 @@ class AuthController extends Controller
     public function logout()
     {
         Auth::logout();
+
         return redirect()->route('login');
     }
 }

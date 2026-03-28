@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
 use App\Models\Roommate;
 use App\Models\Settlement;
+use Illuminate\Http\Request;
 
 class SettlementController extends Controller
 {
@@ -13,6 +12,7 @@ class SettlementController extends Controller
     {
         $roommates = Roommate::all();
         $senderId = $request->query('sender_id');
+
         return view('settlements.create', compact('roommates', 'senderId'));
     }
 

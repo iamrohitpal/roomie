@@ -12,6 +12,7 @@ class Expense extends Model
     {
         return $this->belongsTo(Group::class);
     }
+
     public function payer()
     {
         return $this->belongsTo(Roommate::class, 'payer_id');

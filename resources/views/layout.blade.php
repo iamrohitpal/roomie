@@ -360,6 +360,10 @@
         }
     </script>
     <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="apple-touch-icon" href="{{ asset('icon-192.png') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
@@ -420,6 +424,16 @@
                 </div>
             @endauth
         </header>
+
+        @if ($errors->any())
+            <div class="card animate-fade-in" style="border-color: var(--accent); background: rgba(244, 63, 94, 0.1);">
+                <ul style="color: #fb7185; list-style: none; font-size: 0.875rem; padding: 0;">
+                    @foreach ($errors->all() as $error)
+                        <li><i class="fa-solid fa-circle-exclamation"></i> {{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         @if (session('success'))
             <div class="card animate-fade-in" style="border-color: #22c55e; background: rgba(34, 197, 94, 0.1);">

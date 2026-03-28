@@ -25,27 +25,37 @@
                 @csrf
                 <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px;">
                     <div id="roommate-avatar-preview"
-                        style="width: 60px; height: 60px; border-radius: 30px; background: rgba(255,255,255,0.05); border: 1px dashed var(--glass-border); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: pointer;">
+                        style="width: 60px; height: 60px; border-radius: 30px; background: rgba(255,255,255,0.05); border: 1px dashed {{ $errors->has('avatar') ? 'var(--accent)' : 'var(--glass-border)' }}; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: pointer;">
                         <i class="fa-solid fa-camera" style="font-size: 1rem; color: var(--text-dim);"></i>
                         <input type="file" name="avatar" id="roommate-avatar-input" accept="image/*"
                             style="opacity: 0; position: absolute; inset: 0; cursor: pointer;">
                     </div>
+                    @error('avatar')
+                        <p style="color: var(--accent); font-size: 0.75rem; margin-top: 4px;">{{ $message }}</p>
+                    @enderror
                     <div style="flex: 1;">
                         <label
                             style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px;">Name</label>
-                        <input type="text" name="name" placeholder="e.g. John Doe" required
-                            style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; color: white; outline: none;">
+                        <input type="text" name="name" value="{{ old('name') }}" placeholder="e.g. John Doe"
+                            required
+                            style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid {{ $errors->has('name') ? 'var(--accent)' : 'var(--glass-border)' }}; border-radius: 10px; padding: 12px; color: white; outline: none;">
+                        @error('name')
+                            <p style="color: var(--accent); font-size: 0.75rem; margin-top: 4px;">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px;">Phone
                         Number</label>
                     <div
-                        style="display: flex; gap: 8px; align-items: center; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 4px 12px;">
+                        style="display: flex; gap: 8px; align-items: center; background: rgba(255, 255, 255, 0.05); border: 1px solid {{ $errors->has('phone') ? 'var(--accent)' : 'var(--glass-border)' }}; border-radius: 10px; padding: 4px 12px;">
                         <span style="color: var(--text-dim); font-size: 0.875rem;">+91</span>
-                        <input type="tel" name="phone" placeholder="9876543210" required
+                        <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="9876543210" required
                             style="flex: 1; background: transparent; border: none; padding: 8px 0; color: white; outline: none;">
                     </div>
+                    @error('phone')
+                        <p style="color: var(--accent); font-size: 0.75rem; margin-top: 4px;">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px;">Email

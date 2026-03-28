@@ -12,6 +12,7 @@ class Settlement extends Model
     {
         return $this->belongsTo(Group::class);
     }
+
     public function sender()
     {
         return $this->belongsTo(Roommate::class, 'sender_id');

@@ -15,17 +15,18 @@ class EnsureGroupIsSelected
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return $next($request);
         }
 
         $activeGroupId = session('active_group_id');
 
-        if (!$activeGroupId) {
+        if (! $activeGroupId) {
             $userGroups = auth()->user()->groups;
 
             if ($userGroups->count() === 1) {
                 session(['active_group_id' => $userGroups->first()->id]);
+
                 return $next($request);
             }
 
@@ -37,8 +38,9 @@ class EnsureGroupIsSelected
         }
 
         // Verify user still belongs to this group
-        if (!auth()->user()->groups()->where('groups.id', $activeGroupId)->exists()) {
+        if (! auth()->user()->groups()->where('groups.id', $activeGroupId)->exists()) {
             session()->forget('active_group_id');
+
             return redirect()->route('groups.index');
         }
 

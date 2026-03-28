@@ -20,11 +20,12 @@
                         for="name">
                         Group Name
                     </label>
-                    <input type="text" id="name" name="name" placeholder="e.g. Dream House, Summer Trip" required
-                        autofocus
-                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 16px; color: white; outline: none; transition: border-color 0.2s;">
+                    <input type="text" id="name" name="name" value="{{ old('name') }}"
+                        placeholder="e.g. Dream House, Summer Trip" required autofocus
+                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid {{ $errors->has('name') ? 'var(--accent)' : 'var(--glass-border)' }}; border-radius: 12px; padding: 12px 16px; color: white; outline: none; transition: border-color 0.2s;">
                     @error('name')
-                        <p style="color: var(--accent); font-size: 0.75rem; mt-2">{{ $message }}</p>
+                        <p style="color: var(--accent); font-size: 0.75rem; margin-top: 8px;"><i
+                                class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
                     @enderror
                 </div>
 

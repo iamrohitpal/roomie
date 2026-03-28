@@ -2,15 +2,16 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use App\Models\Group;
 use App\Models\User;
 use Google\Auth\Credentials\ServiceAccountCredentials;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class FirebaseService
 {
     protected $projectId;
+
     protected $credentialsPath;
 
     public function __construct()
@@ -24,8 +25,9 @@ class FirebaseService
      */
     protected function getAccessToken()
     {
-        if (!file_exists($this->credentialsPath)) {
-            Log::error("Firebase Service Account JSON not found at: " . $this->credentialsPath);
+        if (! file_exists($this->credentialsPath)) {
+            Log::error('Firebase Service Account JSON not found at: '.$this->credentialsPath);
+
             return null;
         }
 
@@ -33,9 +35,11 @@ class FirebaseService
             $scopes = ['https://www.googleapis.com/auth/cloud-platform'];
             $credentials = new ServiceAccountCredentials($scopes, $this->credentialsPath);
             $token = $credentials->fetchAuthToken();
+
             return $token['access_token'] ?? null;
         } catch (\Exception $e) {
-            Log::error("Failed to generate Firebase Access Token: " . $e->getMessage());
+            Log::error('Failed to generate Firebase Access Token: '.$e->getMessage());
+
             return null;
         }
     }
@@ -46,7 +50,7 @@ class FirebaseService
     public function send($token, $title, $body, $data = [])
     {
         $accessToken = $this->getAccessToken();
-        if (!$accessToken || !$this->projectId || !$token) {
+        if (! $accessToken || ! $this->projectId || ! $token) {
             return false;
         }
 
@@ -78,12 +82,12 @@ class FirebaseService
         ];
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $accessToken,
+            'Authorization' => 'Bearer '.$accessToken,
             'Content-Type' => 'application/json',
         ])->post($endpoint, $payload);
 
-        if (!$response->successful()) {
-            Log::error("FCM v1 Send Failed: " . $response->body());
+        if (! $response->successful()) {
+            Log::error('FCM v1 Send Failed: '.$response->body());
         }
 
         return $response->successful();
@@ -95,12 +99,14 @@ class FirebaseService
     public function notifyGroup($groupId, $title, $body, $data = [], $excludeUserId = null)
     {
         $group = Group::with('users')->find($groupId);
-        
-        if (!$group) return false;
+
+        if (! $group) {
+            return false;
+        }
 
         $tokens = $group->users
-            ->filter(function($user) use ($excludeUserId) {
-                return $user->id != $excludeUserId && !empty($user->fcm_token);
+            ->filter(function ($user) use ($excludeUserId) {
+                return $user->id != $excludeUserId && ! empty($user->fcm_token);
             })
             ->pluck('fcm_token')
             ->toArray();

@@ -23,8 +23,13 @@
                     <label
                         style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 12px; text-align: center;">Enter
                         OTP Code</label>
-                    <input type="text" name="otp" maxlength="6" placeholder="000000" required autofocus
-                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; color: white; outline: none; font-size: 1.5rem; text-align: center; letter-spacing: 0.5em; font-weight: 700;">
+                    <input type="text" id="otp" name="otp" maxlength="6" value="{{ old('otp') }}"
+                        placeholder="000000" required autofocus
+                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid {{ $errors->has('otp') ? 'var(--accent)' : 'var(--glass-border)' }}; border-radius: 12px; padding: 16px; color: white; outline: none; font-size: 1.5rem; text-align: center; letter-spacing: 0.5em; font-weight: 700; transition: border-color 0.2s;">
+                    @error('otp')
+                        <p style="color: var(--accent); font-size: 0.75rem; margin-top: 8px; text-align: center;"><i
+                                class="fa-solid fa-circle-exclamation"></i> {{ $message }}</p>
+                    @enderror
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 16px;">Verify &

@@ -1,46 +1,55 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\FcmController;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\RoommateController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SettlementController;
+use App\Http\Middleware\EnsureGroupIsSelected;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
-Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [App\Http\Controllers\AuthController::class, 'sendOtp']);
-Route::get('/verify-otp', [App\Http\Controllers\AuthController::class, 'showVerifyOtp'])->name('auth.verify-otp');
-Route::post('/verify-otp', [App\Http\Controllers\AuthController::class, 'verifyOtp']);
+Route::get('/', [AuthController::class, 'showLogin'])->name('login');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login.show');
+Route::post('/login', [AuthController::class, 'sendOtp'])->name('login.send-otp');
+Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('auth.verify-otp');
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('auth.verify-otp.post');
 Route::middleware(['auth'])->group(function () {
     // These routes only require auth (not group selection)
-    Route::get('/profile-setup', [App\Http\Controllers\AuthController::class, 'showProfileSetup'])->name('auth.profile-setup');
-    Route::post('/profile-setup', [App\Http\Controllers\AuthController::class, 'updateProfile']);
-    Route::get('/profile/edit', [App\Http\Controllers\AuthController::class, 'showProfileSetup'])->name('profile.edit');
-    Route::post('/profile/update', [App\Http\Controllers\AuthController::class, 'updateProfile'])->name('profile.update');
-    Route::any('/logout', [App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
+    Route::get('/profile-setup', [AuthController::class, 'showProfileSetup'])->name('auth.profile-setup');
+    Route::post('/profile-setup', [AuthController::class, 'updateProfile'])->name('auth.profile-setup.post');
+    Route::get('/profile/edit', [AuthController::class, 'showProfileSetup'])->name('profile.edit');
+    Route::post('/profile/update', [AuthController::class, 'updateProfile'])->name('profile.update');
+    Route::any('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Group Management
-    Route::get('/groups', [App\Http\Controllers\GroupController::class, 'index'])->name('groups.index');
-    Route::get('/groups/create', [App\Http\Controllers\GroupController::class, 'create'])->name('groups.create');
-    Route::post('/groups', [App\Http\Controllers\GroupController::class, 'store'])->name('groups.store');
-    Route::get('/groups/join', [App\Http\Controllers\GroupController::class, 'join'])->name('groups.join');
-    Route::post('/groups/join', [App\Http\Controllers\GroupController::class, 'joinProcess'])->name('groups.join.process');
-    Route::post('/groups/{id}/switch', [App\Http\Controllers\GroupController::class, 'switch'])->name('groups.switch');
-    Route::post('/groups/clear-data', [App\Http\Controllers\GroupController::class, 'clearData'])->name('groups.clear-data');
-    Route::get('/groups/{id}/export-csv', [App\Http\Controllers\GroupController::class, 'exportCsv'])->name('groups.export-csv');
-    Route::post('/fcm-token', [App\Http\Controllers\FcmController::class, 'updateToken'])->name('fcm.token');
+    Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
+    Route::get('/groups/create', [GroupController::class, 'create'])->name('groups.create');
+    Route::post('/groups', [GroupController::class, 'store'])->name('groups.store');
+    Route::get('/groups/join', [GroupController::class, 'join'])->name('groups.join');
+    Route::post('/groups/join', [GroupController::class, 'joinProcess'])->name('groups.join.process');
+    Route::post('/groups/{id}/switch', [GroupController::class, 'switch'])->name('groups.switch');
+    Route::post('/groups/clear-data', [GroupController::class, 'clearData'])->name('groups.clear-data');
+    Route::get('/groups/{id}/export-csv', [GroupController::class, 'exportCsv'])->name('groups.export-csv');
+    Route::post('/fcm-token', [FcmController::class, 'updateToken'])->name('fcm.token');
 
     // Scoped Routes (Dashboard, Expenses, Roommates) - NOW REQUIRE AUTH + GROUP
-    Route::middleware([\App\Http\Middleware\EnsureGroupIsSelected::class])->group(function () {
-        Route::get('/', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::middleware([EnsureGroupIsSelected::class])->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        Route::resource('expenses', App\Http\Controllers\ExpenseController::class);
-        Route::resource('roommates', App\Http\Controllers\RoommateController::class);
-        Route::post('/roommates/add-user/{user}', [App\Http\Controllers\RoommateController::class, 'addFromUser'])->name('roommates.add-user');
-        Route::post('/settle', [App\Http\Controllers\ExpenseController::class, 'settle'])->name('settle');
+        Route::resource('expenses', ExpenseController::class);
+        Route::resource('roommates', RoommateController::class);
+        Route::post('/roommates/add-user/{user}', [RoommateController::class, 'addFromUser'])->name('roommates.add-user');
+        Route::post('/settle', [ExpenseController::class, 'settle'])->name('settle');
 
         Route::prefix('settlements')->group(function () {
-            Route::get('/create', [App\Http\Controllers\SettlementController::class, 'create'])->name('settlements.create');
-            Route::post('/store', [App\Http\Controllers\SettlementController::class, 'store'])->name('settlements.store');
+            Route::get('/create', [SettlementController::class, 'create'])->name('settlements.create');
+            Route::post('/store', [SettlementController::class, 'store'])->name('settlements.store');
         });
 
-        Route::get('/settings', [App\Http\Controllers\SettingController::class, 'index'])->name('settings.index');
+        Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     });
 });
-
