@@ -42,10 +42,17 @@
             <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 20px;">
                 Get real-time alerts when new expenses are added or roommates join.
             </p>
-            <button type="button" onclick="requestPermission()" class="btn btn-secondary"
-                style="width: 100%; border: 1px solid var(--primary-light); color: var(--primary-light);">
-                <i class="fa-solid fa-bell-circle-check" style="margin-right: 8px;"></i> Enable Notifications
-            </button>
+            @if (Auth::user()->fcm_token)
+                <button type="button" onclick="disableNotifications()" class="btn"
+                    style="width: 100%; background: rgba(251, 113, 133, 0.1); color: #fb7185; border: 1px solid rgba(251, 113, 133, 0.2);">
+                    <i class="fa-solid fa-bell-slash" style="margin-right: 8px;"></i> Disable Notifications
+                </button>
+            @else
+                <button type="button" onclick="requestPermission()" class="btn btn-secondary"
+                    style="width: 100%; border: 1px solid var(--primary-light); color: var(--primary-light);">
+                    <i class="fa-solid fa-bell-circle-check" style="margin-right: 8px;"></i> Enable Notifications
+                </button>
+            @endif
         </div>
 
         <div class="card" style="padding: 16px;">

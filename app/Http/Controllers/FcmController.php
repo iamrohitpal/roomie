@@ -26,4 +26,20 @@ class FcmController extends Controller
 
         return response()->json(['message' => 'User not authenticated'], 401);
     }
+
+    /**
+     * Remove the user's FCM token.
+     */
+    public function deleteToken(Request $request)
+    {
+        $user = Auth::user();
+        if ($user) {
+            $user->fcm_token = null;
+            $user->save();
+
+            return response()->json(['message' => 'Notifications disabled successfully']);
+        }
+
+        return response()->json(['message' => 'User not authenticated'], 401);
+    }
 }

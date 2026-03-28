@@ -35,6 +35,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/groups/clear-data', [GroupController::class, 'clearData'])->name('groups.clear-data');
     Route::get('/groups/{id}/export-csv', [GroupController::class, 'exportCsv'])->name('groups.export-csv');
     Route::post('/fcm-token', [FcmController::class, 'updateToken'])->name('fcm.token');
+    Route::post('/fcm-token/delete', [FcmController::class, 'deleteToken'])->name('fcm.token.delete');
 
     // Scoped Routes (Dashboard, Expenses, Roommates) - NOW REQUIRE AUTH + GROUP
     Route::middleware([EnsureGroupIsSelected::class])->group(function () {

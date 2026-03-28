@@ -396,7 +396,7 @@
         <header>
             <div style="display: flex; flex-direction: column;">
                 <a href="{{ route('dashboard') }}" style="text-decoration: none; color: inherit;">
-                    <div class="logo" style="margin-bottom: 0;">Roomie</div>
+                    <div class="logo">Roomie</div>
                 </a>
                 @if (session('active_group_id'))
                     @php $activeGroup = \App\Models\Group::find(session('active_group_id')); @endphp
@@ -414,13 +414,13 @@
 
             @auth
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="text-align: right;">
+                    <div style="text-align: right; display: flex; flex-direction: column; gap: 2px;">
                         <a href="{{ route('profile.edit') }}"
                             style="text-decoration: none; color: inherit; display: block;">
                             <p style="font-size: 0.75rem; font-weight: 700;">{{ Auth::user()->name }}</p>
                         </a>
                         <a href="{{ route('logout') }}"
-                            style="font-size: 0.625rem; color: var(--accent); text-decoration: none; display: block; margin-top: 2px;">Logout</a>
+                            style="font-size: 0.625rem; color: var(--accent); text-decoration: none; display: block;">Logout</a>
                     </div>
                     <a href="{{ route('profile.edit') }}" class="user-pill" style="text-decoration: none;">
                         @if (Auth::user()->avatar)
@@ -585,6 +585,26 @@
                 }
             }
 
+            function disableNotifications() {
+                fetch("{{ route('fcm.token.delete') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Server error');
+                        return response.json();
+                    })
+                    .then(data => {
+                        window.location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error disabling notifications:', error);
+                    });
+            }
+
             function sendTokenToServer(token) {
                 fetch("{{ route('fcm.token') }}", {
                         method: 'POST',
@@ -599,6 +619,9 @@
                     .then(response => {
                         if (!response.ok) throw new Error('Server response: ' + response.status);
                         return response.json();
+                    })
+                    .then(data => {
+                        window.location.reload();
                     })
                     .catch(error => {
                         console.error('Error saving token:', error);
