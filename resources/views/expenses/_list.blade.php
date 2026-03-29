@@ -14,7 +14,13 @@
                         @endif
                     </div>
                     <div>
-                        <p style="font-weight: 600;">{{ $expense->description }}</p>
+                        <p style="font-weight: 600;">
+                            {{ $expense->description }}
+                            @if ($expense->updated_at->gt($expense->created_at))
+                                <span
+                                    style="font-size: 0.625rem; color: var(--text-dim); font-weight: 400; font-style: italic; margin-left: 4px;">(Edited)</span>
+                            @endif
+                        </p>
                         <p style="font-size: 0.75rem; color: var(--text-dim);">Paid by
                             {{ $expense->payer->user_id === Auth::id() ? 'You' : $expense->payer->name }} •
                             {{ date('D, M j, Y', strtotime($expense->date)) }}</p>
@@ -24,9 +30,34 @@
                     <span style="color: var(--text); font-weight: 500;">₹{{ number_format($expense->amount, 2) }}</span>
                 </p>
             </div>
-            <div style="text-align: right;">
+            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                 <span class="badge"
                     style="background: rgba(99, 102, 241, 0.1); color: var(--primary-light);">{{ $expense->category }}</span>
+
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    @if ($expense->payer->user_id === auth()->id() && $expense->created_at->diffInMinutes(now()) <= 10)
+                        <a href="{{ route('expenses.edit', $expense->id) }}" title="Edit Expense"
+                            style="color: var(--text-dim); transition: color 0.2s;"
+                            onmouseover="this.style.color='var(--primary-light)'"
+                            onmouseout="this.style.color='var(--text-dim)'">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>
+                    @endif
+
+                    @if ($expense->payer->user_id === auth()->id() || $expense->group->created_by === auth()->id())
+                        <form action="{{ route('expenses.destroy', $expense->id) }}" method="POST"
+                            onsubmit="return confirm('Are you sure you want to delete this expense?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" title="Delete Expense"
+                                style="background: none; border: none; padding: 0; color: var(--text-dim); cursor: pointer; transition: color 0.2s;"
+                                onmouseover="this.style.color='#fb7185'"
+                                onmouseout="this.style.color='var(--text-dim)'">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    @endif
+                </div>
             </div>
         </div>
 

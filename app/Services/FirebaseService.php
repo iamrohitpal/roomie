@@ -16,8 +16,12 @@ class FirebaseService
 
     public function __construct()
     {
-        $this->projectId = config('services.firebase.project_id') ?? env('FIREBASE_PROJECT_ID');
+        $this->projectId = config('services.firebase.project_id') ?: env('FIREBASE_PROJECT_ID');
         $this->credentialsPath = storage_path('app/firebase-auth.json');
+
+        if (empty($this->projectId)) {
+            Log::warning('FirebaseService: FIREBASE_PROJECT_ID is not set in .env or config.');
+        }
     }
 
     /**

@@ -379,12 +379,11 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
+                // Register the primary worker (for PWA & Background Messaging)
+                // We don't register firebase-messaging-sw.js separately here to avoid conflicts
                 navigator.serviceWorker.register('{{ asset('worker.js') }}')
                     .then(function(registration) {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    })
-                    .catch(function(error) {
-                        console.log('ServiceWorker registration failed: ', error);
+                        console.log('Roomie ServiceWorker registered with scope:', registration.scope);
                     });
             });
         }
@@ -562,11 +561,15 @@
             }
 
             async function requestPermission() {
-                if (!messaging) return;
+                if (!messaging) {
+                    console.warn('FCM Messaging not initialized. Check your Firebase config.');
+                    return;
+                }
 
                 try {
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
+                        // Use the special FCM service worker file for token generation
                         const swPath = "{{ asset('firebase-messaging-sw.js') }}";
                         const registration = await navigator.serviceWorker.register(swPath);
                         await navigator.serviceWorker.ready;
@@ -578,10 +581,15 @@
 
                         if (token) {
                             sendTokenToServer(token);
+                        } else {
+                            console.warn('No registration token available. Request permission to generate one.');
                         }
+                    } else {
+                        console.warn('Notification permission denied.');
                     }
                 } catch (error) {
-                    console.error('Notification error:', error);
+                    console.error('An error occurred while retrieving token:', error);
+                    alert('Notification Error: ' + error.message);
                 }
             }
 
@@ -616,16 +624,19 @@
                             token: token
                         })
                     })
-                    .then(response => {
-                        if (!response.ok) throw new Error('Server response: ' + response.status);
+                    .then(async (response) => {
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`Server error (${response.status}): ${errorText}`);
+                        }
                         return response.json();
                     })
                     .then(data => {
                         window.location.reload();
                     })
                     .catch(error => {
-                        console.error('Error saving token:', error);
-                        alert('Error saving notification token: ' + error.message);
+                        console.error('Error saving token to server:', error);
+                        alert('Live Server Error: Failed to save notification token. ' + error.message);
                     });
             }
         </script>

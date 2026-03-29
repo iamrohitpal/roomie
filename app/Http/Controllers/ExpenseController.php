@@ -114,6 +114,97 @@ class ExpenseController extends Controller
         return redirect()->route('dashboard')->with('success', 'Expense added!');
     }
 
+    public function edit($id)
+    {
+        $expense = Expense::with('splits')->findOrFail($id);
+
+        // Authorization: Only the payer can edit
+        if ($expense->payer->user_id !== auth()->id()) {
+            return redirect()->back()->with('error', 'You can only edit your own expenses.');
+        }
+
+        // Time check: Only within 10 minutes
+        if ($expense->created_at->diffInMinutes(now()) > 10) {
+            return redirect()->back()->with('error', 'You can only edit expenses within 10 minutes of adding them.');
+        }
+
+        $groupId = session('active_group_id');
+        $roommates = Roommate::where('group_id', $groupId)->get();
+
+        return view('expenses.edit', compact('expense', 'roommates'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $expense = Expense::findOrFail($id);
+
+        // Authorization & Time Check
+        if ($expense->payer->user_id !== auth()->id()) {
+            return redirect()->back()->with('error', 'Unauthorized.');
+        }
+
+        if ($expense->created_at->diffInMinutes(now()) > 10) {
+            return redirect()->back()->with('error', 'Edit window expired.');
+        }
+
+        $request->validate([
+            'description' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0.01',
+            'splits' => 'required|array',
+            'splits.*' => 'required|numeric|min:0',
+            'date' => 'required|date',
+            'category' => 'nullable|string',
+        ]);
+
+        $totalSplits = array_sum($request->splits);
+        if (abs($totalSplits - $request->amount) > 0.1) {
+            return redirect()->back()->withErrors(['amount' => 'Sum of splits must equal total amount.'])->withInput();
+        }
+
+        DB::transaction(function () use ($request, $expense) {
+            $expense->update([
+                'description' => $request->description,
+                'amount' => $request->amount,
+                'date' => $request->date,
+                'category' => $request->category ?? 'General',
+            ]);
+
+            // Refresh splits: delete old and create new
+            $expense->splits()->delete();
+            foreach ($request->splits as $roommateId => $amount) {
+                if ($amount > 0) {
+                    ExpenseSplit::create([
+                        'expense_id' => $expense->id,
+                        'roommate_id' => $roommateId,
+                        'amount' => $amount,
+                    ]);
+                }
+            }
+        });
+
+        return redirect()->route('dashboard')->with('success', 'Expense updated!');
+    }
+
+    public function destroy($id)
+    {
+        $expense = Expense::with('group')->findOrFail($id);
+
+        // Authorization: Payer OR Group Creator
+        $isPayer = $expense->payer->user_id === auth()->id();
+        $isCreator = $expense->group->created_by === auth()->id();
+
+        if (! $isPayer && ! $isCreator) {
+            return redirect()->back()->with('error', 'You are not authorized to delete this expense.');
+        }
+
+        DB::transaction(function () use ($expense) {
+            $expense->splits()->delete();
+            $expense->delete();
+        });
+
+        return redirect()->back()->with('success', 'Expense deleted successfully.');
+    }
+
     public function settle(Request $request)
     {
         $groupId = session('active_group_id');
