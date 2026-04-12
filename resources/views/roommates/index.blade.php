@@ -86,7 +86,7 @@
                     <div>
                         <p style="font-weight: 600;">
                             {{ Auth::check() && $roommate->user_id === Auth::id() ? 'You' : $roommate->name }}</p>
-                        <p style="font-size: 0.75rem; color: var(--text-dim);">{{ $roommate->email ?? 'No email' }}</p>
+                        <p style="font-size: 0.75rem; color: var(--text-dim);">{{ $roommate->phone ?? 'No phone' }}</p>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 16px;">
