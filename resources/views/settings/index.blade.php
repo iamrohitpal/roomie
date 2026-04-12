@@ -69,7 +69,7 @@
                         Group to Manage</label>
                     <select name="group_id" id="groupSelect" required
                         style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; color: white; outline: none; font-size: 0.875rem;">
-                        @foreach ($groups as $group)
+                        @foreach ($allGroups as $group)
                             <option value="{{ $group->id }}"
                                 {{ session('active_group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}
                             </option>
@@ -78,15 +78,28 @@
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <button type="button" onclick="downloadCsv()" class="btn btn-secondary"
+                    <button type="button" id="downloadCsvBtn" onclick="downloadCsv()" class="btn btn-secondary"
                         style="width: 100%; border: 1px solid var(--primary-light); color: var(--primary-light);">
                         <i class="fa-solid fa-download" style="margin-right: 8px;"></i> Download CSV Report
                     </button>
 
-                    <button type="button" onclick="confirmClear()" class="btn"
-                        style="width: 100%; background: rgba(251, 113, 133, 0.1); color: #fb7185; border: 1px solid rgba(251, 113, 133, 0.2); transition: all 0.2s;">
-                        <i class="fa-solid fa-trash-can" style="margin-right: 8px;"></i> Clear Selected Group Data
-                    </button>
+                    @php
+                        $activeGroupId = session('active_group_id');
+                        $isOwnerOfActive = $ownedGroups->contains('id', $activeGroupId);
+                        $ownedGroupsList = $ownedGroups->pluck('id')->toArray();
+                    @endphp
+
+                    @if($ownedGroups->count() > 0)
+                        <div id="owner-only-section" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(251, 113, 133, 0.2);">
+                             <p style="font-size: 0.7rem; color: #fb7185; margin-bottom: 8px; font-weight: 500;">
+                                <i class="fa-solid fa-crown"></i> OWNER ACTIONS
+                            </p>
+                            <button type="button" id="clearDataBtn" onclick="confirmClear()" class="btn"
+                                style="width: 100%; background: rgba(251, 113, 133, 0.1); color: #fb7185; border: 1px solid rgba(251, 113, 133, 0.2); transition: all 0.2s;">
+                                <i class="fa-solid fa-trash-can" style="margin-right: 8px;"></i> Clear Selected Group Data
+                            </button>
+                        </div>
+                    @endif
                 </div>
             </form>
         </div>
@@ -106,8 +119,17 @@
     }
 
     function confirmClear() {
-        const select = document.querySelector('select[name="group_id"]');
+        const select = document.getElementById('groupSelect');
+        const groupId = select.value;
         const groupName = select.options[select.selectedIndex].text;
+        
+        // Pass the owned groups list to JS for extra validation
+        const ownedGroups = @json($ownedGroups->pluck('id'));
+        
+        if (!ownedGroups.includes(parseInt(groupId))) {
+            showAlert('Unauthorized', 'You can only clear data for groups you created.', 'error');
+            return;
+        }
 
         showConfirm(
             'Clear Group Data',

@@ -44,7 +44,7 @@
                         </a>
                     @endif
 
-                    @if ($expense->payer->user_id === auth()->id() || $expense->group->created_by === auth()->id())
+                    @if ($expense->group->created_by === auth()->id())
                         <form action="{{ route('expenses.destroy', $expense->id) }}" method="POST"
                             onsubmit="return confirm('Are you sure you want to delete this expense?')">
                             @csrf

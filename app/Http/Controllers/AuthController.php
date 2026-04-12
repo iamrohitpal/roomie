@@ -66,6 +66,9 @@ class AuthController extends Controller
         // Clear OTP
         $user->update(['otp' => null, 'otp_expires_at' => null]);
 
+        // Sync memberships and info BEFORE login/check
+        $this->syncGroupMemberships($user);
+
         Auth::login($user, true);
 
         if (empty($user->name)) {
@@ -81,7 +84,23 @@ class AuthController extends Controller
             return redirect()->route('login');
         }
 
-        return view('auth.profile-setup');
+        $user = Auth::user();
+        $phone = $user ? $user->phone : session('auth_phone');
+
+        // Note: verifyOtp now handles the sync, so Auth::user()->name should already be set if found
+        $prefilledName = $user ? $user->name : '';
+        $prefilledAvatar = $user ? $user->avatar : '';
+
+        // Fallback for safety or session-only flow
+        if (empty($prefilledName) || empty($prefilledAvatar)) {
+            $roommate = Roommate::where('phone', $phone)->first();
+            if ($roommate) {
+                if (empty($prefilledName)) $prefilledName = $roommate->name;
+                if (empty($prefilledAvatar)) $prefilledAvatar = $roommate->avatar;
+            }
+        }
+
+        return view('auth.profile-setup', compact('prefilledName', 'prefilledAvatar'));
     }
 
     public function updateProfile(Request $request)
@@ -107,30 +126,7 @@ class AuthController extends Controller
 
         $user->update($data);
 
-        // Sync with Roommate record
-        // First check if a roommate exists with this phone but no user_id
-        $existingRoommate = Roommate::where('phone', $user->phone)
-            ->whereNull('user_id')
-            ->first();
-
-        if ($existingRoommate) {
-            $existingRoommate->update([
-                'user_id' => $user->id,
-                'name' => $user->name,
-                'avatar' => $user->avatar,
-                'email' => $user->email ?? $existingRoommate->email,
-            ]);
-        } else {
-            Roommate::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'phone' => $user->phone,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'avatar' => $user->avatar,
-                ]
-            );
-        }
+        $this->syncGroupMemberships($user);
 
         Auth::login($user, true);
         session()->forget(['auth_phone', 'debug_otp']);
@@ -143,5 +139,34 @@ class AuthController extends Controller
         Auth::logout();
 
         return redirect()->route('login');
+    }
+
+    private function syncGroupMemberships(User $user)
+    {
+        // Find all roommate records matching this phone
+        $roommates = Roommate::where('phone', $user->phone)->get();
+
+        foreach ($roommates as $roommate) {
+            // If user's info is missing, take it from the roommate record
+            if (empty($user->name) && ! empty($roommate->name)) {
+                $user->update([
+                    'name' => $roommate->name,
+                    'avatar' => $user->avatar ?? $roommate->avatar,
+                ]);
+            }
+
+            // Link existing roommate record to this user
+            $roommate->update([
+                'user_id' => $user->id,
+                'name' => $user->name ?? $roommate->name,
+                'avatar' => $user->avatar ?? $roommate->avatar,
+                'email' => $user->email ?? $roommate->email,
+            ]);
+
+            // Automatically join the group if not already a member
+            if (! $user->groups()->where('group_id', $roommate->group_id)->exists()) {
+                $user->groups()->attach($roommate->group_id, ['role' => 'member']);
+            }
+        }
     }
 }

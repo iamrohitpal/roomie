@@ -135,9 +135,9 @@ class GroupController extends Controller
 
         $groupId = $request->group_id;
 
-        // Verify user belongs to this group
-        if (! auth()->user()->groups()->where('groups.id', $groupId)->exists()) {
-            return redirect()->back()->with('error', 'Unauthorized action.');
+        // Verify user is the OWNER (creator) of this group
+        if (! auth()->user()->groups()->where('groups.id', $groupId)->where('created_by', auth()->id())->exists()) {
+            return redirect()->back()->with('error', 'Only the group creator can clear group data.');
         }
 
         // Delete all expenses and their splits in bulk

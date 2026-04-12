@@ -189,12 +189,11 @@ class ExpenseController extends Controller
     {
         $expense = Expense::with('group')->findOrFail($id);
 
-        // Authorization: Payer OR Group Creator
-        $isPayer = $expense->payer->user_id === auth()->id();
+        // Authorization: Group Creator Only
         $isCreator = $expense->group->created_by === auth()->id();
 
-        if (! $isPayer && ! $isCreator) {
-            return redirect()->back()->with('error', 'You are not authorized to delete this expense.');
+        if (! $isCreator) {
+            return redirect()->back()->with('error', 'Only the group owner can delete expenses.');
         }
 
         DB::transaction(function () use ($expense) {

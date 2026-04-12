@@ -6,8 +6,10 @@ class SettingController extends Controller
 {
     public function index()
     {
-        $groups = auth()->user()->groups;
+        $user = auth()->user();
+        $allGroups = $user->groups;
+        $ownedGroups = \App\Models\Group::where('created_by', $user->id)->get();
 
-        return view('settings.index', compact('groups'));
+        return view('settings.index', compact('allGroups', 'ownedGroups'));
     }
 }

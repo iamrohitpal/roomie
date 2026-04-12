@@ -57,11 +57,14 @@
                         <p style="color: var(--accent); font-size: 0.75rem; margin-top: 4px;">{{ $message }}</p>
                     @enderror
                 </div>
-                <div style="margin-bottom: 16px;">
+                <div style="margin-bottom: 24px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px;">Email
                         (Optional)</label>
-                    <input type="email" name="email" placeholder="john@example.com"
-                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; color: white; outline: none;">
+                    <input type="email" name="email" value="{{ old('email') }}" placeholder="john@example.com"
+                        style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid {{ $errors->has('email') ? 'var(--accent)' : 'var(--glass-border)' }}; border-radius: 10px; padding: 12px; color: white; outline: none;">
+                    @error('email')
+                        <p style="color: var(--accent); font-size: 0.75rem; margin-top: 4px;">{{ $message }}</p>
+                    @enderror
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Add Roommate</button>
             </form>

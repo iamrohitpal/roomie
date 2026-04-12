@@ -6,6 +6,7 @@ use App\Models\Group;
 use App\Models\Roommate;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class RoommateController extends Controller
 {
@@ -45,8 +46,14 @@ class RoommateController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:50|min:2',
-            'phone' => 'required|numeric|digits:10',
-            'email' => 'nullable|email|max:255',
+            'phone' => [
+                'required', 'numeric', 'digits:10',
+                Rule::unique('roommates')->where(fn ($query) => $query->where('group_id', $groupId))
+            ],
+            'email' => [
+                'nullable', 'email', 'max:255',
+                Rule::unique('roommates')->where(fn ($query) => $query->where('group_id', $groupId))
+            ],
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
